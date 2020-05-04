@@ -1,0 +1,44 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:tx="http://www.springframework.org/schema/tx"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+            http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+	<context:component-scan base-package="eu.rimaycsanad.springcameljms" />
+	<context:annotation-config />
+
+	<tx:jta-transaction-manager />
+	<tx:annotation-driven />
+
+	<bean id="required" class="org.apache.camel.spring.spi.SpringTransactionPolicy">
+		<property name="transactionManager" ref="transactionManager"/>
+		<property name="propagationBehaviorName" value="PROPAGATION_REQUIRED"/>
+	</bean>
+
+	<bean id="authConnectionFactory"
+		  class="org.springframework.jms.connection.UserCredentialsConnectionFactoryAdapter">
+		<property name="targetConnectionFactory" ref="connectionFactory" />
+		<property name="username" value="jms" />
+		<property name="password" value="12345678" />
+	</bean>
+	<bean id="connectionFactory" class="org.springframework.jndi.JndiObjectFactoryBean">
+		<property name="jndiName" value="java:jboss/exported/jms/RemoteConnectionFactory" />
+		<property name="lookupOnStartup" value="true" />
+		<property name="cache" value="true" />
+		<property name="proxyInterface" value="javax.jms.ConnectionFactory" />
+	</bean>
+
+	<bean id="jms" class="org.apache.camel.component.jms.JmsComponent">
+		<property name="connectionFactory" ref="authConnectionFactory" />
+		<property name="transacted" value="true"/>
+		<property name="transactionManager" ref="transactionManager"/>
+	</bean>
+
+	<camelContext xmlns="http://camel.apache.org/schema/spring"
+				  id="camel-context" trace="false" useMDCLogging="true">
+		<contextScan />
+	</camelContext>
+</beans>
